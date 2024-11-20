@@ -1,0 +1,7 @@
+Flask==2.3.3
+transformers==4.30.2
+requests==2.31.0
+moviepy==1.0.3
+torch==2.0.1  # Required for transformers to run on CPU/GPU
+
+#pip install -r requirements.txt

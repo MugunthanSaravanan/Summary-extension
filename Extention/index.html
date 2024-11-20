@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Transcriber</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #output { margin-top: 20px; }
+        #fileUpload { margin-top: 10px; }
+        #downloadBtn { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Media Transcriber</h1>
+
+    <div>
+        <label>
+            <input type="radio" name="mediaType" id="audioOption" checked> Audio
+        </label>
+        <label>
+            <input type="radio" name="mediaType" id="videoOption"> Video
+        </label>
+    </div>
+
+    <div>
+        <button id="startBtn">Start Recording</button>
+        <button id="stopBtn" disabled>Stop Recording</button>
+    </div>
+
+    <div id="fileUpload">
+        <label for="mediaFile">Or upload a file:</label>
+        <input type="file" id="mediaFile" accept="audio/*,video/*">
+        <button id="uploadBtn">Upload</button>
+    </div>
+
+    <h2>Results</h2>
+    <div id="output">
+        <p id="transcription">Transcription will appear here...</p>
+        <p id="summary">Summary will appear here...</p>
+    </div>
+
+    <button id="downloadBtn" disabled>Download Results</button>
+
+    <!-- External JS file -->
+    <script src="script.js"></script>
+</body>
+</html>

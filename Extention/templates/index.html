@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio/Video Transcription</title>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        label {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #555;
+        }
+
+        input[type="file"], button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 1rem;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        input[type="file"]:hover {
+            border-color: #007BFF;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .output {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        /* Custom Toggle Button for Media Type */
+        .toggle-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .toggle-button {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-button input {
+            display: none;
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 34px;
+            transition: background-color 0.4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: '';
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.4s;
+        }
+
+        input:checked + .slider {
+            background-color: #007BFF;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .label {
+            font-size: 1rem;
+            margin: 0 10px;
+        }
+
+        /* Recording Buttons */
+        #recordingControls button {
+            width: 48%;
+            display: inline-block;
+            margin-right: 2%;
+        }
+
+        #stopRecordingBtn {
+            margin-right: 0;
+        }
+
+        #recordingControls button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Audio/Video Transcription</h1>
+
+        <!-- Media Type Toggle -->
+        <div class="toggle-container">
+            <span class="label">Audio</span>
+            <label class="toggle-button">
+                <input type="checkbox" id="mediaType" onclick="toggleMediaType()">
+                <span class="slider"></span>
+            </label>
+            <span class="label">Video</span>
+        </div>
+
+        <!-- Recording Controls -->
+        <div id="recordingControls">
+            <button id="startRecordingBtn" onclick="startRecording()">Start Recording</button>
+            <button id="stopRecordingBtn" onclick="stopRecording()" disabled>Stop Recording</button>
+        </div>
+
+        <!-- Screen Audio Capture Button -->
+        <button id="startScreenRecordingBtn" onclick="startScreenRecording()">Capture Screen Audio</button>
+        <button id="stopScreenRecordingBtn" onclick="stopScreenRecording()" disabled>Stop Screen Capture</button> 
+
+        <!-- File Upload -->
+        <input type="file" id="mediaFile" accept="audio/*,video/*">
+        <button onclick="uploadMedia()">Upload and Transcribe</button>
+
+        <!-- Transcription and Summary Output -->
+        <h2>Transcription:</h2>
+        <div id="transcriptionOutput" class="output">The transcription will appear here...</div>
+        
+        <h2>Summary:</h2>
+        <div id="summaryOutput" class="output">The summary will appear here...</div>
+
+        <button id="downloadBtn" onclick="downloadResults()" disabled>Download Results</button>
+
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isAudio = true;
+        let screenRecorder;
+
+        function toggleMediaType() {
+            const mediaTypeInput = document.getElementById('mediaType');
+            isAudio = !mediaTypeInput.checked;
+        }
+
+        async function startRecording() {
+            const constraints = isAudio ? { audio: true } : { video: true, audio: true };
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(recordedChunks, { type: isAudio ? 'audio/wav' : 'video/mp4' });
+                const reader = new FileReader();
+                reader.onloadend = async function () {
+                    const base64Media = reader.result.split(',')[1]; // Get the base64 string without the prefix
+                    await sendMediaToServer(base64Media);
+                };
+                reader.readAsDataURL(blob); // Read the blob as base64
+                recordedChunks = []; // Reset the recorded chunks
+            };
+
+            mediaRecorder.start();
+            document.getElementById('startRecordingBtn').disabled = true;
+            document.getElementById('stopRecordingBtn').disabled = false;
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            document.getElementById('startRecordingBtn').disabled = false;
+            document.getElementById('stopRecordingBtn').disabled = true;
+        }
+
+        async function startScreenRecording() {
+            try {
+                // Request display media (screen video) and microphone audio
+                const displayStream = await navigator.mediaDevices.getDisplayMedia({ 
+                    video: true, 
+                    audio: true  // Capture both video and audio from the screen
+                });
+
+                // Create a MediaRecorder for screen capture with audio
+                screenRecorder = new MediaRecorder(displayStream, { mimeType: 'video/webm; codecs=vp8' });
+
+                screenRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                screenRecorder.onstop = async () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' }); // Store in WebM format
+
+                    // Create a FormData object and append the Blob to it
+                    const formData = new FormData();
+                    formData.append('screen_recording', blob, 'screen_recording_with_audio.webm');
+
+                    try {
+                        // Send the Blob to Flask via POST request as FormData
+                        const response = await fetch('http://127.0.0.1:3000/api/transcribe', { // Adjust URL as needed
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (response.ok) {
+                            console.log('File uploaded successfully');
+                        } else {
+                            console.error('File upload failed:', response.statusText);
+                        }
+                    } catch (error) {
+                        console.error('Error uploading file:', error);
+                    }
+
+                    // Optional: Create a download link for the recorded video
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'screen_recording_with_audio.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    recordedChunks = [];
+                };
+
+                screenRecorder.start();
+                document.getElementById('startScreenRecordingBtn').disabled = true;
+                document.getElementById('stopScreenRecordingBtn').disabled = false;
+            } catch (error) {
+                console.error('Error capturing screen:', error);
+                alert('Failed to capture screen with audio. Please check your browser permissions.');
+            }
+        }
+
+        function stopScreenRecording() {
+            screenRecorder.stop();
+            document.getElementById('startScreenRecordingBtn').disabled = false;
+            document.getElementById('stopScreenRecordingBtn').disabled = true;
+        }
+
+        async function sendMediaToServer(base64Media) {
+            const mediaType = isAudio ? 'audio' : 'video';  // Determine the media type
+            const response = await fetch('/api/transcribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    media: base64Media,
+                    type: mediaType  // Use type instead of isAudio
+                })
+            });
+
+            // Check for response status and handle errors
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error:', errorData);
+                alert(`Error: ${errorData.error || 'Unknown error'}`);
+                return;
+            }
+
+            const data = await response.json();
+            document.getElementById('transcriptionOutput').innerText = data.transcription;
+            document.getElementById('summaryOutput').innerText = data.summary;
+            document.getElementById('downloadBtn').disabled = false;
+        }
+
+        async function uploadMedia() {
+            const fileInput = document.getElementById('mediaFile');
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onloadend = async function () {
+                const base64Media = reader.result.split(',')[1]; // Get the base64 string without the prefix
+                await sendMediaToServer(base64Media);
+            };
+
+            if (file) {
+                reader.readAsDataURL(file); // Read the file as base64
+            } else {
+                alert('Please select a file to upload.');
+            }
+        }
+
+        function downloadResults() {
+            // Ensure the correct API URL is being used
+            fetch('/api/download')  // Adjust URL based on how the Flask app is running
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to download results.');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'transcription_summary.txt';  // The name of the file to be downloaded
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+    </script>
+</body>
+</html>

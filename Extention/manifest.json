@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Media Transcriber",
+  "description": "Transcribe audio and video files directly from your browser.",
+  "version": "1.0",
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon.png",
+            "48": "icon.png",
+            "128": "icon.png"
+        }
+    },
+
+  "permissions": [
+      "storage",
+      "activeTab",
+      "scripting"
+  ],
+  "background": {
+      "service_worker": "background.js"
+  },
+  "host_permissions": [
+      "http://127.0.0.1:3000/*"
+  ],
+  "icons": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+  }
+}
